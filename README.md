@@ -69,42 +69,6 @@ graph TB
 
 ---
 
-## Data Flow — Batch Lifecycle
-
-```mermaid
-sequenceDiagram
-    participant OP as Factory Operator
-    participant ESP as ESP32 Device
-    participant API as Node.js API
-    participant DB as MySQL
-    participant MGR as Production Manager
-
-    OP->>ESP: Scans QR Code (Lot ID)
-    ESP->>ESP: State: IDLE → MONITORING
-    Note over ESP: Counting strokes via ISR
-
-    loop Every machine stroke
-        ESP->>ESP: Increment count (atomic)<br/>Save to RTC memory
-    end
-
-    ESP->>ESP: IR sensor detects chain end<br/>State: MONITORING → WAITING_FOR_QR
-    OP->>ESP: Scans QR Code (same or new lot)
-    ESP->>ESP: Finalize batch, generate UUID
-
-    ESP->>API: POST /api/upload<br/>{ lot_id, units, start_time, end_time, uuid, signature }
-    API->>API: Verify HMAC signature<br/>Check timestamp freshness<br/>Reject replay attacks
-    API->>DB: INSERT batch (UUID deduplication)
-    DB-->>API: 200 OK
-    API-->>ESP: 200 OK
-
-    MGR->>+API: GET /api/data (Dashboard)
-    API->>DB: SELECT aggregated KPIs
-    DB-->>API: Results
-    API-->>-MGR: JSON response → Dashboard renders
-```
-
----
-
 ## Resilience & Data Persistence
 
 This was one of the hardest engineering problems. A factory machine doesn't care if the WiFi drops or the power goes out mid-shift. The system must never lose a single count.
