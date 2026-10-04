@@ -13,6 +13,7 @@ An **ESP32 microcontroller** mounts directly on each machine. It counts every st
 The system was designed and built **from scratch** and deployed in a **real industrial facility**.
 
 The engineering decisions throughout this project reflect real-world constraints: unreliable WiFi, power outages, machines that vibrate hard enough to trigger phantom sensor readings, and corporate network firewalls that block standard NTP. Each of those problems required understanding the system at a deeper level.
+
 ---
 
 ## Project Workflow
