@@ -77,7 +77,7 @@ This was one of the hardest engineering problems. A factory machine doesn't care
 ```mermaid
 flowchart TD
     STROKE([Machine Stroke Detected])
-    ISR["ISR fires on Core 1<br/>Atomic increment"]
+    ISR["ISR fires on Core 1<br/>"]
     RTC["Write count to RTC Memory<br/>Survives soft reboot / WDT crash"]
     NVS["NVS Flash backup<br/>Every 90s or 100 strokes<br/>Survives hard power loss"]
     DONE{WiFi Connected<br/>+ NTP Synced?}
