@@ -35,6 +35,72 @@ The engineering decisions throughout this project reflect real-world constraints
 
 ---
 
+## Operational Dashboards & Interfaces
+
+The system includes two specialized web applications tailored for different operational roles on and off the factory floor. Both interfaces run entirely client-side (vanilla JavaScript, HTML5, CSS3) and communicate securely with the central Node.js REST API.
+
+### 1. Production Monitor Dashboard (`dashboard.html` / `dashboard.js`)
+
+> **Primary Users:** Plant Managers, Production Supervisors, and Operations Teams
+
+The **Production Monitor** provides high-level visibility and granular analytics into factory output, shift productivity, and lot traceability.
+
+![Production Monitor Dashboard](production_dashboard.png)
+
+#### Key Features & Capabilities:
+- **Live Factory KPIs**: Real-time summary cards displaying **Total Batches**, **Total Units Produced**, **Average Batch Size**, **Unique Lots**, and **Active Devices**.
+- **Dual-Shift Accounting**: Automatically segments production data into standard industrial shifts:
+  - **Day Shift** (06:30 IST – 18:30 IST)
+  - **Night Shift** (18:30 IST – 06:30 IST)
+  - *Midnight Rollover Intelligence*: Runs occurring between midnight and 06:30 AM IST are automatically credited to the correct preceding production day.
+- **Interactive Visual Analytics (Chart.js)**:
+  - **Units Over Time (By Shift)**: Multi-bar trend chart comparing Day vs. Night output across consecutive days.
+  - **Units by Product Group**: Donut chart breakdown showing production share across machine types and lines.
+  - **Shift Distribution**: Donut visualization comparing total daytime vs. nighttime output volume.
+- **Multi-Parametric Filter Engine**: Instant, debounced filtering by:
+  - **Lot ID**: Exact match or partial prefix search.
+  - **Device ID & Product Group**: Target specific production lines or machine types.
+  - **Custom Date Ranges**: Selectable start and end dates with date-picker inputs.
+  - **Shift Filter**: Isolate Day, Night, or view All Shifts simultaneously.
+- **Enterprise Reporting & Exports**:
+  - **Excel-Formatted CSV**: Exports a comprehensive report containing filter metadata, summary totals, and itemized batch tables optimized for Microsoft Excel.
+  - **PDF & Visual Snapshot Exports**: One-click generation of shift reports for management meetings and audits.
+- **Client-Side Configuration**: Modal dialog allows dynamic configuration of the target API URL and authentication key, persisted locally via `localStorage`.
+
+---
+
+### 2. IT Remote Control & Diagnostics Panel (`remote_panel.html` / `remote_panel.js`)
+
+> **Primary Users:** Plant IT Administrators, Automation Engineers, and Maintenance Technicians
+
+The **Remote Panel** is a centralized control plane for device health monitoring, real-time diagnostics, and remote maintenance across all deployed ESP32 units without requiring physical access to the factory floor.
+
+![IT Remote Control Panel](remote_panel_dashboard.png)
+
+#### Key Features & Capabilities:
+- **Fleet-Wide Health Telemetry**:
+  - Real-time fleet KPI cards: **Total Discovered Devices**, **Online** (active heartbeat ≤ 10 min), **Warning / Idle** (10–60 min), **Offline** (silent > 60 min), **Pending Commands**, and **Total Units Today**.
+  - Auto-refreshing status table with periodic poll interval countdown.
+- **Live Machine & Run Tracking**:
+  - Displays real-time stroke counters and active QR Lot IDs directly in the fleet table while a batch is actively running on the floor.
+  - Immediate alert badges highlighting missed heartbeats, sensor warnings, or network drops with contextual error messages and troubleshooting hints.
+- **Cloud-Brokered Remote Device Commands**:
+  - **Remote Reboot (`RESTART`)**: Dispatch a software watchdog reboot to any ESP32 experiencing latch-up.
+  - **Flag Reset (`CLEAR_FLAGS`)**: Remotely reset hardware alert states and error flags.
+  - **Force Sync (`FORCE_SYNC`)**: Instruct edge devices to immediately flush LittleFS offline buffers to MySQL upon next heartbeat.
+  - *Non-Blocking Command Queue*: Commands are queued on the server and pulled down asynchronously during regular device heartbeat cycles.
+- **Live Cloud Serial Console**:
+  - Integrated terminal emulator streaming raw ESP32 serial logs over HTTPS in near real-time (5-second polling interval).
+  - Color-coded severity parsing: errors highlighted in red, warnings in yellow, and operational milestones in green for rapid remote diagnosis.
+- **Device Uptime & Availability Profiling**:
+  - Interactive modal displaying cumulative time distributions (Online, Idle, Warning, Offline) with visual percentage bars.
+  - Built-in audit reset function for scheduled maintenance intervals.
+- **Zero-Trust Access Control**:
+  - Protected behind an authentication gate with server-verified credentials (`/api/panel/auth`) and bearer session tokens (`sessionStorage`).
+  - Progressive rate-limiting lockout with visual feedback to protect against unauthorized brute-force attempts.
+
+---
+
 ## System Architecture
 
 ```mermaid
@@ -169,72 +235,6 @@ Factory floors have dense 2.4GHz interference and enterprise "Smart Connect" rou
 - Rolling replay attack prevention
 - In-memory command queue with automatic TTL cleanup
 - Graceful shutdown with pending-data flush
-
----
-
-## Operational Dashboards & Interfaces
-
-The system includes two specialized web applications tailored for different operational roles on and off the factory floor. Both interfaces run entirely client-side (vanilla JavaScript, HTML5, CSS3) and communicate securely with the central Node.js REST API.
-
-### 1. Production Monitor Dashboard (`dashboard.html` / `dashboard.js`)
-
-> **Primary Users:** Plant Managers, Production Supervisors, and Operations Teams
-
-The **Production Monitor** provides high-level visibility and granular analytics into factory output, shift productivity, and lot traceability.
-
-![Production Monitor Dashboard](production_dashboard.png)
-
-#### Key Features & Capabilities:
-- **Live Factory KPIs**: Real-time summary cards displaying **Total Batches**, **Total Units Produced**, **Average Batch Size**, **Unique Lots**, and **Active Devices**.
-- **Dual-Shift Accounting**: Automatically segments production data into standard industrial shifts:
-  - **Day Shift** (06:30 IST – 18:30 IST)
-  - **Night Shift** (18:30 IST – 06:30 IST)
-  - *Midnight Rollover Intelligence*: Runs occurring between midnight and 06:30 AM IST are automatically credited to the correct preceding production day.
-- **Interactive Visual Analytics (Chart.js)**:
-  - **Units Over Time (By Shift)**: Multi-bar trend chart comparing Day vs. Night output across consecutive days.
-  - **Units by Product Group**: Donut chart breakdown showing production share across machine types and lines.
-  - **Shift Distribution**: Donut visualization comparing total daytime vs. nighttime output volume.
-- **Multi-Parametric Filter Engine**: Instant, debounced filtering by:
-  - **Lot ID**: Exact match or partial prefix search.
-  - **Device ID & Product Group**: Target specific production lines or machine types.
-  - **Custom Date Ranges**: Selectable start and end dates with date-picker inputs.
-  - **Shift Filter**: Isolate Day, Night, or view All Shifts simultaneously.
-- **Enterprise Reporting & Exports**:
-  - **Excel-Formatted CSV**: Exports a comprehensive report containing filter metadata, summary totals, and itemized batch tables optimized for Microsoft Excel.
-  - **PDF & Visual Snapshot Exports**: One-click generation of shift reports for management meetings and audits.
-- **Client-Side Configuration**: Modal dialog allows dynamic configuration of the target API URL and authentication key, persisted locally via `localStorage`.
-
----
-
-### 2. IT Remote Control & Diagnostics Panel (`remote_panel.html` / `remote_panel.js`)
-
-> **Primary Users:** Plant IT Administrators, Automation Engineers, and Maintenance Technicians
-
-The **Remote Panel** is a centralized control plane for device health monitoring, real-time diagnostics, and remote maintenance across all deployed ESP32 units without requiring physical access to the factory floor.
-
-![IT Remote Control Panel](remote_panel_dashboard.png)
-
-#### Key Features & Capabilities:
-- **Fleet-Wide Health Telemetry**:
-  - Real-time fleet KPI cards: **Total Discovered Devices**, **Online** (active heartbeat ≤ 10 min), **Warning / Idle** (10–60 min), **Offline** (silent > 60 min), **Pending Commands**, and **Total Units Today**.
-  - Auto-refreshing status table with periodic poll interval countdown.
-- **Live Machine & Run Tracking**:
-  - Displays real-time stroke counters and active QR Lot IDs directly in the fleet table while a batch is actively running on the floor.
-  - Immediate alert badges highlighting missed heartbeats, sensor warnings, or network drops with contextual error messages and troubleshooting hints.
-- **Cloud-Brokered Remote Device Commands**:
-  - **Remote Reboot (`RESTART`)**: Dispatch a software watchdog reboot to any ESP32 experiencing latch-up.
-  - **Flag Reset (`CLEAR_FLAGS`)**: Remotely reset hardware alert states and error flags.
-  - **Force Sync (`FORCE_SYNC`)**: Instruct edge devices to immediately flush LittleFS offline buffers to MySQL upon next heartbeat.
-  - *Non-Blocking Command Queue*: Commands are queued on the server and pulled down asynchronously during regular device heartbeat cycles.
-- **Live Cloud Serial Console**:
-  - Integrated terminal emulator streaming raw ESP32 serial logs over HTTPS in near real-time (5-second polling interval).
-  - Color-coded severity parsing: errors highlighted in red, warnings in yellow, and operational milestones in green for rapid remote diagnosis.
-- **Device Uptime & Availability Profiling**:
-  - Interactive modal displaying cumulative time distributions (Online, Idle, Warning, Offline) with visual percentage bars.
-  - Built-in audit reset function for scheduled maintenance intervals.
-- **Zero-Trust Access Control**:
-  - Protected behind an authentication gate with server-verified credentials (`/api/panel/auth`) and bearer session tokens (`sessionStorage`).
-  - Progressive rate-limiting lockout with visual feedback to protect against unauthorized brute-force attempts.
 
 ---
 
