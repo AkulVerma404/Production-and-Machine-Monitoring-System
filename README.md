@@ -167,28 +167,6 @@ No raw credentials ever leave the device. Even if a request is intercepted, it c
 
 ---
 
-## ESP32 State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> BOOT
-
-    BOOT --> IDLE: NVS invalid / no prior batch
-    BOOT --> MONITORING: RTC/NVS recovery detected\n(reboot mid-batch)
-
-    IDLE --> IDLE: QR scanned → Lot ID stored\n(waiting for machine to start)
-    IDLE --> MONITORING: 5+ strokes confirmed\n(anti-vibration threshold)
-
-    MONITORING --> MONITORING: Strokes counting\nPeriodic NVS + RTC saves
-    MONITORING --> WAITING_FOR_NEXT_QR: IR clear + 30s silence\n(chain end detected)
-    MONITORING --> IDLE: Same QR scanned →\nbatch finalized & uploaded
-
-    WAITING_FOR_NEXT_QR --> MONITORING: 5+ new strokes\n(new chain confirmed)
-    WAITING_FOR_NEXT_QR --> IDLE: New QR scanned →\nold batch closed, new one started
-```
-
----
-
 ## Key Engineering Challenges Solved
 
 ### 1. ISR Timing on a Dual-Core RTOS
