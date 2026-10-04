@@ -196,6 +196,18 @@ Factory floors have dense 2.4GHz interference and enterprise "Smart Connect" rou
 
 ---
 
-## License
+###Fail-Safes
+- **HMAC-SHA256 Cryptography & Replay Protection**: To prevent spoofing, payloads are secured using per-device keys derived from a Master Key. The server rejects outdated timestamps (>5 mins) and maintains a rolling Set of recently used signatures to reject duplicated/replay attacks.
+- **Idempotency via UUIDs**: The ESP32 generates a standard UUIDv4 for every completed batch. The MySQL database drops colliding UUID inserts, ensuring that network retries never lead to over-reporting units.
+- **Clock Drift Corrections**: If a device loses NTP sync during an offline period, the backend cross-references the reported physical duration against the start and end timestamps, overriding corrupted dates automatically before DB insertion.
+- **Memory Profiling**: Device logs are capped via circular ring buffers (max 200 elements per device), protecting the Node.js process from memory exhaustion under heavy load.
 
-MIT
+---
+
+## Conclusion
+
+This project represents a complete, production-grade IoT system — designed, built, and deployed entirely from scratch in a real industrial environment.
+
+It spans every layer of the software stack: low-level interrupt-driven C++ firmware running on a microcontroller, a secure cloud backend with cryptographic request signing, and browser-based dashboards for both production managers and IT teams. Every component was built with a focus on **reliability first** — because in a factory, data loss or a silent crash isn't a bug to fix later, it's units that were produced but never recorded.
+
+The engineering decisions throughout this project reflect real-world constraints: unreliable WiFi, power outages, machines that vibrate hard enough to trigger phantom sensor readings, and corporate network firewalls that block standard NTP. Each of those problems required understanding the system at a deeper level than a tutorial project ever demands.
