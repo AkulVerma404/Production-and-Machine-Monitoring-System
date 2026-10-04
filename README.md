@@ -12,6 +12,7 @@ An **ESP32 microcontroller** mounts directly on each machine. It counts every st
 
 The system was designed and built **from scratch** and deployed in a **real industrial facility**.
 
+The engineering decisions throughout this project reflect real-world constraints: unreliable WiFi, power outages, machines that vibrate hard enough to trigger phantom sensor readings, and corporate network firewalls that block standard NTP. Each of those problems required understanding the system at a deeper level.
 ---
 
 ## Project Workflow
@@ -262,8 +263,6 @@ The **Remote Panel** is a centralized control plane for device health monitoring
 This project represents a complete, production-grade IoT system — designed, built, and deployed entirely from scratch in a real industrial environment.
 
 It spans every layer of the software stack: low-level interrupt-driven C++ firmware running on a microcontroller, a secure cloud backend with cryptographic request signing, and browser-based dashboards for both production managers and IT teams. Every component was built with a focus on **reliability first** — because in a factory, data loss or a silent crash isn't a bug to fix later, it's units that were produced but never recorded.
-
-The engineering decisions throughout this project reflect real-world constraints: unreliable WiFi, power outages, machines that vibrate hard enough to trigger phantom sensor readings, and corporate network firewalls that block standard NTP. Each of those problems required understanding the system at a deeper level than a tutorial project ever demands.
 
 ---
 
