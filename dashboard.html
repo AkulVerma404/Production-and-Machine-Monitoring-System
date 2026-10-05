@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Monitor — Industrial Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --sur: #161920;
+      --sur2: #1e2230;
+      --brd: #2a2f3f;
+      --acc: #4f8ef7;
+      --pur: #7c5ce4;
+      --grn: #00d97e;
+      --yel: #f5c842;
+      --red: #f05c5c;
+      --org: #ff9f43;
+      --txt: #e2e8f8;
+      --mut: #7a839a;
+      --rad: 12px
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      min-height: 100vh
+    }
+
+    /* MODAL */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999
+    }
+
+    .modal {
+      background: var(--sur);
+      border: 1px solid var(--brd);
+      border-radius: 16px;
+      padding: 28px;
+      width: 430px;
+      max-width: 92vw
+    }
+
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 6px
+    }
+
+    .modal p {
+      color: var(--mut);
+      font-size: 13px;
+      margin-bottom: 20px
+    }
+
+    .frow {
+      margin-bottom: 14px
+    }
+
+    .frow label {
+      display: block;
+      font-size: 13px;
+      color: var(--mut);
+      margin-bottom: 6px
+    }
+
+    .frow input {
+      width: 100%
+    }
+
+    .mfooter {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px
+    }
+
+    /* HEADER */
+    header {
+      background: var(--sur);
+      border-bottom: 1px solid var(--brd);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 62px;
+      position: sticky;
+      top: 0;
+      z-index: 100
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--acc);
+      box-shadow: 0 0 10px var(--acc);
+      animation: pulse 2s infinite
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    .logo h1 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -.3px
+    }
+
+    .logo span {
+      color: var(--acc)
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(0, 217, 126, .12);
+      color: var(--grn);
+      border: 1px solid rgba(0, 217, 126, .25)
+    }
+
+    #hdr-right {
+      font-size: 13px;
+      color: var(--mut);
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    /* FILTER BAR */
+    .fbar {
+      background: var(--sur);
+      border-bottom: 1px solid var(--brd);
+      padding: 12px 28px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end
+    }
+
+    .ig {
+      display: flex;
+      flex-direction: column;
+      gap: 4px
+    }
+
+    .ig label {
+      font-size: 11px;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .04em
+    }
+
+    input,
+    select {
+      background: var(--sur2);
+      border: 1px solid var(--brd);
+      color: var(--txt);
+      border-radius: 8px;
+      padding: 7px 11px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color .2s;
+      min-width: 120px
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--acc)
+    }
+
+    button {
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap
+    }
+
+    .bp {
+      background: var(--acc);
+      color: #fff
+    }
+
+    .bp:hover {
+      background: #3a7ae8;
+      transform: translateY(-1px)
+    }
+
+    .bs {
+      background: var(--sur2);
+      color: var(--txt);
+      border: 1px solid var(--brd)
+    }
+
+    .bs:hover {
+      border-color: var(--acc);
+      color: var(--acc)
+    }
+
+    .bg {
+      background: rgba(0, 217, 126, .15);
+      color: var(--grn);
+      border: 1px solid rgba(0, 217, 126, .3)
+    }
+
+    .bg:hover {
+      background: rgba(0, 217, 126, .25)
+    }
+
+    .bpu {
+      background: rgba(124, 92, 228, .15);
+      color: var(--pur);
+      border: 1px solid rgba(124, 92, 228, .3)
+    }
+
+    .bpu:hover {
+      background: rgba(124, 92, 228, .25)
+    }
+
+    .bo {
+      background: rgba(255, 159, 67, .15);
+      color: var(--org);
+      border: 1px solid rgba(255, 159, 67, .3)
+    }
+
+    .bo:hover {
+      background: rgba(255, 159, 67, .25)
+    }
+
+    /* MAIN */
+    main {
+      padding: 24px 28px;
+      max-width: 1700px;
+      margin: 0 auto
+    }
+
+    .slabel {
+      font-size: 11px;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--brd)
+    }
+
+    /* KPI */
+    .kgrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px
+    }
+
+    .kcard {
+      background: var(--sur);
+      border: 1px solid var(--brd);
+      border-radius: var(--rad);
+      padding: 17px 18px;
+      transition: border-color .2s
+    }
+
+    .kcard:hover {
+      border-color: var(--acc)
+    }
+
+    .kcard.kday {
+      border-left: 3px solid var(--yel)
+    }
+
+    .kcard.knight {
+      border-left: 3px solid var(--pur)
+    }
+
+    .klbl {
+      font-size: 11px;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 7px
+    }
+
+    .kval {
+      font-size: 25px;
+      font-weight: 700;
+      letter-spacing: -1px
+    }
+
+    .ksub {
+      font-size: 11px;
+      color: var(--mut);
+      margin-top: 3px
+    }
+
+    .ca {
+      color: var(--acc)
+    }
+
+    .cg {
+      color: var(--grn)
+    }
+
+    .cy {
+      color: var(--yel)
+    }
+
+    .co {
+      color: var(--org)
+    }
+
+    .cp {
+      color: var(--pur)
+    }
+
+    /* SHIFT PANEL */
+    .sgrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px
+    }
+
+    .scard {
+      background: var(--sur);
+      border: 1px solid var(--brd);
+      border-radius: var(--rad);
+      padding: 18px 20px
+    }
+
+    .scard.sday {
+      border-top: 3px solid var(--yel)
+    }
+
+    .scard.snight {
+      border-top: 3px solid var(--pur)
+    }
+
+    .shdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px
+    }
+
+    .stitle {
+      font-size: 14px;
+      font-weight: 600
+    }
+
+    .stime {
+      font-size: 12px;
+      color: var(--mut)
+    }
+
+    .sstats {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap
+    }
+
+    .sstat .lbl {
+      font-size: 11px;
+      color: var(--mut);
+      text-transform: uppercase;
+      margin-bottom: 3px
+    }
+
+    .sstat .val {
+      font-size: 21px;
+      font-weight: 700
+    }
+
+    /* CHARTS */
+    .cgrid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px
+    }
+
+    @media(max-width:1100px) {
+      .cgrid {
+        grid-template-columns: 1fr 1fr
+      }
+    }
+
+    @media(max-width:700px) {
+      .cgrid {
+        grid-template-columns: 1fr
+      }
+
+      .sgrid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .ccard {
+      background: var(--sur);
+      border: 1px solid var(--brd);
+      border-radius: var(--rad);
+      padding: 18px 20px
+    }
+
+    .ctitle {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 12px
+    }
+
+    .cwrap {
+      position: relative;
+      height: 195px
+    }
+
+    /* TABLE */
+    .tcard {
+      background: var(--sur);
+      border: 1px solid var(--brd);
+      border-radius: var(--rad);
+      overflow: hidden
+    }
+
+    .thdr {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--brd);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px
+    }
+
+    .thdr h2 {
+      font-size: 14px;
+      font-weight: 600
+    }
+
+    .twrap {
+      overflow-x: auto
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px
+    }
+
+    thead th {
+      background: var(--sur2);
+      padding: 10px 13px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--brd);
+      transition: background .1s
+    }
+
+    tbody tr:last-child {
+      border-bottom: none
+    }
+
+    tbody tr:hover {
+      background: var(--sur2)
+    }
+
+    tbody td {
+      padding: 10px 13px;
+      font-size: 13px
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600
+    }
+
+    .bba {
+      background: rgba(79, 142, 247, .15);
+      color: var(--acc)
+    }
+
+    .bbg {
+      background: rgba(0, 217, 126, .12);
+      color: var(--grn)
+    }
+
+    .bby {
+      background: rgba(245, 200, 66, .15);
+      color: var(--yel)
+    }
+
+    .bbp {
+      background: rgba(124, 92, 228, .15);
+      color: var(--pur)
+    }
+
+    .bbo {
+      background: rgba(255, 159, 67, .15);
+      color: var(--org)
+    }
+
+    /* Amber warning badge — PARTIAL_RECOVERY rows */
+    .bbw {
+      background: rgba(245, 200, 66, .22);
+      color: #f5c842;
+      border: 1px solid rgba(245, 200, 66, .45);
+      cursor: help
+    }
+
+    /* Subtle amber left-border on the entire row */
+    tbody tr.row-partial {
+      border-left: 3px solid rgba(245, 200, 66, .7)
+    }
+
+    tbody tr.row-partial:hover {
+      background: rgba(245, 200, 66, .06)
+    }
+
+    .mono {
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--mut)
+    }
+
+    /* PAGINATION */
+    .pager {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 13px 18px;
+      border-top: 1px solid var(--brd);
+      justify-content: flex-end
+    }
+
+    .pinfo {
+      font-size: 13px;
+      color: var(--mut);
+      margin-right: auto
+    }
+
+    .pbtn {
+      background: var(--sur2);
+      border: 1px solid var(--brd);
+      color: var(--txt);
+      padding: 5px 13px;
+      font-size: 13px
+    }
+
+    .pbtn:disabled {
+      opacity: .35;
+      cursor: not-allowed
+    }
+
+    .pbtn.act {
+      background: var(--acc);
+      border-color: var(--acc);
+      color: #fff
+    }
+
+    /* MISC */
+    .ld {
+      text-align: center;
+      padding: 55px;
+      color: var(--mut);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 11px
+    }
+
+    .spin {
+      width: 30px;
+      height: 30px;
+      border: 3px solid var(--brd);
+      border-top-color: var(--acc);
+      border-radius: 50%;
+      animation: spin .8s linear infinite
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .err {
+      color: var(--red);
+      font-size: 13px;
+      text-align: center;
+      padding: 16px
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- MODAL -->
+  <div class="overlay" id="modal">
+    <div class="modal">
+      <h2>Connect to VPS</h2>
+      <p>Enter your API details to connect to the production server.</p>
+      <div class="frow"><label>VPS API Base URL</label><input id="cfg-url" type="text" placeholder="https://your-server-ip-or-domain">
+      </div>
+      <div class="frow"><label>Dashboard API Key</label><input id="cfg-key" type="password"
+          placeholder="Paste DASHBOARD_KEY from .env"></div>
+      <div class="mfooter"><button class="bp" id="connectBtn" onclick="saveConfig()">Connect →</button></div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="dot"></div>
+      <h1>Production <span>Monitor</span></h1>
+    </div>
+    <div id="hdr-right">
+      <span id="status-text">—</span>
+      <span class="chip">LIVE</span>
+      <a href="remote_panel.html" target="_blank" style="text-decoration:none"><button class="bs"
+          style="padding:4px 11px;font-size:12px;color:var(--red);border-color:rgba(240,92,92,.35);">⚡ Remote
+          Panel</button></a>
+      <button class="bs" style="padding:4px 11px;font-size:12px;" id="cfgBtn">⚙ Config</button>
+    </div>
+  </header>
+
+  <!-- FILTER BAR -->
+  <div class="fbar">
+    <div class="ig"><label>Lot ID</label><input id="f-lot" placeholder="e.g. 4014195,ZROR,..."></div>
+    <div class="ig"><label>Device ID</label><input id="f-device" placeholder="e.g. LINE1-CT-01"></div>
+    <div class="ig"><label>Product Group</label><input id="f-group" placeholder="e.g. LINE1" title="Prefix of device ID">
+    </div>
+    <div class="ig"><label>Shift</label>
+      <select id="f-shift">
+        <option value="">All Shifts</option>
+        <option value="Day">☀ Day (6:30–18:30)</option>
+        <option value="Night">🌙 Night (18:30–6:30)</option>
+      </select>
+    </div>
+    <div class="ig"><label>Date From</label><input id="f-from" type="date"></div>
+    <div class="ig"><label>Date To</label><input id="f-to" type="date"></div>
+    <div class="ig"><label>Rows/Page</label>
+      <select id="f-limit">
+        <option value="25">25</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+        <option value="500">500</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <button class="bp" id="refreshBtn">↺ Refresh</button>
+      <button class="bg" id="csvBtn">↓ CSV</button>
+      <button class="bpu" id="pdfBtn">↓ PDF</button>
+      <button class="bo" id="imgBtn">↓ Image</button>
+      <button class="bs" id="clearBtn">✕ Clear</button>
+    </div>
+  </div>
+
+  <main>
+    <!-- KPIs -->
+    <div class="slabel">Overall Summary</div>
+    <div class="kgrid" style="margin-bottom:22px">
+      <div class="kcard">
+        <div class="klbl">Total Batches</div>
+        <div class="kval ca" id="k-bat">—</div>
+        <div class="ksub">in filter</div>
+      </div>
+      <div class="kcard">
+        <div class="klbl">Units Produced</div>
+        <div class="kval cg" id="k-uni">—</div>
+        <div class="ksub">total</div>
+      </div>
+      <div class="kcard">
+        <div class="klbl">Avg Batch Size</div>
+        <div class="kval cy" id="k-avg">—</div>
+        <div class="ksub">units/batch</div>
+      </div>
+      <div class="kcard">
+        <div class="klbl">Unique Lots</div>
+        <div class="kval" id="k-lot">—</div>
+        <div class="ksub">distinct lot IDs</div>
+      </div>
+      <div class="kcard">
+        <div class="klbl">Active Devices</div>
+        <div class="kval" id="k-dev">—</div>
+        <div class="ksub">distinct devices</div>
+      </div>
+      <div class="kcard kday">
+        <div class="klbl">☀ Day Shift Units</div>
+        <div class="kval cy" id="k-day">—</div>
+        <div class="ksub">6:30 AM–6:30 PM</div>
+      </div>
+      <div class="kcard knight">
+        <div class="klbl">🌙 Night Shift Units</div>
+        <div class="kval cp" id="k-ngt">—</div>
+        <div class="ksub">6:30 PM–6:30 AM</div>
+      </div>
+      <div class="kcard">
+        <div class="klbl">Product Groups</div>
+        <div class="kval co" id="k-grp">—</div>
+        <div class="ksub">distinct groups</div>
+      </div>
+    </div>
+
+    <!-- SHIFT PANEL -->
+    <div class="slabel">Shift Breakdown</div>
+    <div class="sgrid" style="margin-bottom:22px">
+      <div class="scard sday">
+        <div class="shdr"><span class="stitle">☀ Day Shift</span><span class="stime">06:30 IST → 18:30
+            IST</span></div>
+        <div class="sstats">
+          <div class="sstat">
+            <div class="lbl">Units</div>
+            <div class="val cy" id="sd-u">—</div>
+          </div>
+          <div class="sstat">
+            <div class="lbl">Batches</div>
+            <div class="val" id="sd-b">—</div>
+          </div>
+          <div class="sstat">
+            <div class="lbl">Avg</div>
+            <div class="val" id="sd-a">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="scard snight">
+        <div class="shdr"><span class="stitle">🌙 Night Shift</span><span class="stime">18:30 IST → 06:30
+            IST</span></div>
+        <div class="sstats">
+          <div class="sstat">
+            <div class="lbl">Units</div>
+            <div class="val cp" id="sn-u">—</div>
+          </div>
+          <div class="sstat">
+            <div class="lbl">Batches</div>
+            <div class="val" id="sn-b">—</div>
+          </div>
+          <div class="sstat">
+            <div class="lbl">Avg</div>
+            <div class="val" id="sn-a">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="slabel">Analytics</div>
+    <div class="cgrid" style="margin-bottom:22px">
+      <div class="ccard">
+        <div class="ctitle">Units Over Time (by shift)</div>
+        <div class="cwrap"><canvas id="cTimeline"></canvas></div>
+      </div>
+      <div class="ccard">
+        <div class="ctitle">Units by Product Group</div>
+        <div class="cwrap"><canvas id="cGroups"></canvas></div>
+      </div>
+      <div class="ccard">
+        <div class="ctitle">Shift Distribution</div>
+        <div class="cwrap"><canvas id="cShift"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="slabel">Batch Records</div>
+    <div class="tcard">
+      <div class="thdr">
+        <h2>All Batches</h2><span style="font-size:13px;color:var(--mut)" id="rcnt">—</span>
+      </div>
+      <div class="twrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Shift</th>
+              <th>Group</th>
+              <th>Lot ID</th>
+              <th>Units</th>
+              <th>Device ID</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Duration</th>
+              <th>Recorded At</th>
+              <th>UUID</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr>
+              <td colspan="11">
+                <div class="ld">
+                  <div class="spin"></div>Loading...
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span class="pinfo" id="pinfo">—</span>
+        <button class="pbtn" id="prevBtn">‹ Prev</button>
+        <div id="pnums" style="display:flex;gap:5px"></div>
+        <button class="pbtn" id="nextBtn">Next ›</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Externalize script -->
+  <script src="dashboard.js"></script>
+</body>
+
+</html>
