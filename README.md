@@ -221,7 +221,7 @@ Factory floors have dense 2.4GHz interference and enterprise "Smart Connect" rou
 ## Features
 
 ### ESP32 Firmware (`main_esp_v2.ino`)
-- Interrupt-driven stroke counting — up to 1.5 strokes/sec with hardware debounce
+- Interrupt-driven stroke counting — up to 3 strokes/sec with hardware debounce
 - 3-state machine with automatic chain-end detection via IR sensor
 - Multi-AP WiFi failover across up to 5 networks
 - 3-tier data persistence (RTC → NVS → LittleFS)
